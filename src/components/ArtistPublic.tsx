@@ -2235,11 +2235,11 @@ export default function ArtistPublic({
               <div id="pub-tracks-list" className="border border-[#10b981]/25 rounded-2xl bg-gradient-to-br from-[#0c0f0d] to-[#040605] backdrop-blur-md overflow-hidden text-left flex flex-col shadow-2xl">
                 
                 {/* Headers Line Table Column */}
-                <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-4 border-b border-zinc-800/80 text-[10px] font-mono uppercase tracking-widest text-zinc-500 font-extrabold select-none">
-                  <div className="col-span-1">#</div>
-                  <div className="col-span-5">MÚSICA / GUIA EM MP3</div>
+                <div className="hidden sm:grid grid-cols-12 gap-3 md:gap-4 px-6 py-4 border-b border-zinc-800/80 text-[10px] font-mono uppercase tracking-widest text-zinc-500 font-extrabold select-none">
+                  <div className="col-span-2"># / PLAY</div>
+                  <div className="col-span-4 md:col-span-5">MÚSICA / GUIA EM MP3</div>
                   <div className="col-span-3">ESTILO / GÊNERO</div>
-                  <div className="col-span-3 text-right">AÇÕES</div>
+                  <div className="col-span-3 md:col-span-2 text-right">AÇÕES</div>
                 </div>
 
                 {/* Rows loops */}
@@ -2266,8 +2266,11 @@ export default function ArtistPublic({
                         }}
                         className={`grid grid-cols-12 gap-3 md:gap-4 px-4.5 sm:px-6 py-1.5 md:py-2 items-center cursor-pointer transition-all select-none border-l-[3.5px] group ${isCurrentlyPlaying ? 'bg-zinc-850/60 border-l-[#10b981] shadow-inner' : 'border-l-transparent hover:border-l-zinc-700 hover:bg-zinc-800/60'}`}
                       >
-                        {/* Col 1: Play trigger - permanently visible circular button */}
-                        <div className="col-span-2 sm:col-span-1 flex items-center justify-start min-w-8">
+                        {/* Col 1: Index Number + Play Trigger (always visible together) */}
+                        <div className="col-span-3 sm:col-span-2 flex items-center justify-start gap-2 sm:gap-3 min-w-0">
+                          <span className="font-mono text-[11px] sm:text-xs font-bold text-zinc-500 select-none shrink-0 w-5 text-left">
+                            {(idx + 1).toString().padStart(2, '0')}
+                          </span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -2296,7 +2299,7 @@ export default function ArtistPublic({
                         </div>
 
                         {/* Col 2: Title & Waveform bar layout from Reference */}
-                        <div className="col-span-7 sm:col-span-5 flex items-center gap-3 min-w-0">
+                        <div className="col-span-6 sm:col-span-4 md:col-span-5 flex items-center gap-3 min-w-0">
                           
                           {/* Mini dynamic waveform indicator next to title */}
                           <div className="flex items-end gap-[1.5px] h-3.5 text-[#10b981] shrink-0 select-none hidden lg:flex mr-1">
