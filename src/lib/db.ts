@@ -2580,7 +2580,8 @@ export const dbService = {
       const q = query(
         collection(db, 'repertoires'),
         where('ownerUid', '==', ownerUid),
-        where('slug', '==', slugOrId)
+        where('slug', '==', slugOrId),
+        where('visibility', 'in', ['public', 'unlisted', 'active'])
       );
       const snap = await getDocs(q);
       if (!snap.empty) {
@@ -2611,20 +2612,22 @@ export const dbService = {
           const data = docSnap.data();
           if (data.ownerUid === ownerUid) {
             let visibilityVal = data.visibility || 'public';
-            if (visibilityVal === 'active') visibilityVal = 'public';
-            return {
-              id: docSnap.id,
-              ownerUid: data.ownerUid,
-              name: data.name,
-              slug: data.slug || '',
-              description: data.description || '',
-              type: data.type || 'repertoire',
-              trackIds: data.trackIds || [],
-              orderedTrackIds: data.orderedTrackIds || data.trackIds || [],
-              visibility: (visibilityVal === 'unlisted' || visibilityVal === 'private') ? 'unlisted' : 'public',
-              createdAt: data.createdAt || new Date().toISOString(),
-              updatedAt: data.updatedAt || new Date().toISOString()
-            } as Repertoire;
+            if (['public', 'unlisted', 'active', 'private'].includes(visibilityVal)) {
+              if (visibilityVal === 'active') visibilityVal = 'public';
+              return {
+                id: docSnap.id,
+                ownerUid: data.ownerUid,
+                name: data.name,
+                slug: data.slug || '',
+                description: data.description || '',
+                type: data.type || 'repertoire',
+                trackIds: data.trackIds || [],
+                orderedTrackIds: data.orderedTrackIds || data.trackIds || [],
+                visibility: (visibilityVal === 'unlisted' || visibilityVal === 'private') ? 'unlisted' : 'public',
+                createdAt: data.createdAt || new Date().toISOString(),
+                updatedAt: data.updatedAt || new Date().toISOString()
+              } as Repertoire;
+            }
           }
         }
       }
