@@ -22,7 +22,8 @@ export default function HowToUsePage({
   showLogo = true,
   customLogoUrl
 }: HowToUsePageProps) {
-  const [lessons, setLessons] = useState<TutorialLesson[]>(DEFAULT_TUTORIAL_LESSONS);
+  const [lessons, setLessons] = useState<TutorialLesson[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState<TutorialLesson | null>(null);
 
   // Carregar aulas do Firestore (settings/tutorials) com fallback automático
@@ -30,18 +31,28 @@ export default function HowToUsePage({
     let isMounted = true;
     dbService.getTutorialSettings()
       .then((fetchedLessons) => {
-        if (isMounted && Array.isArray(fetchedLessons) && fetchedLessons.length > 0) {
+        if (!isMounted) return;
+        if (Array.isArray(fetchedLessons) && fetchedLessons.length > 0) {
           const activeOrdered = fetchedLessons
             .filter(l => l.active !== false)
             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
           if (activeOrdered.length > 0) {
             setLessons(activeOrdered);
+            setIsLoading(false);
+            return;
           }
         }
+        // Se a leitura terminou sem dados válidos, aplica o fallback padrão
+        setLessons(DEFAULT_TUTORIAL_LESSONS);
+        setIsLoading(false);
       })
       .catch((err) => {
         console.error("Erro ao carregar tutoriais do Firestore, usando fallback padrão:", err);
+        if (isMounted) {
+          setLessons(DEFAULT_TUTORIAL_LESSONS);
+          setIsLoading(false);
+        }
       });
 
     return () => {
@@ -113,83 +124,119 @@ export default function HowToUsePage({
           </p>
         </div>
 
-        {/* GRADE DE AULAS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {lessons.map((lesson, idx) => {
-            const thumbnailUrl = `https://img.youtube.com/vi/${lesson.youtubeVideoId}/hqdefault.jpg`;
-            const lessonNumber = String(lesson.order || idx + 1).padStart(2, '0');
-
-            return (
+        {/* GRADE DE AULAS OU SKELETON NEUTRO DE CARREGAMENTO */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
               <div 
-                key={lesson.id}
-                className="bg-slate-900/60 border border-slate-800/80 hover:border-slate-700/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition group shadow-lg hover:shadow-black/60"
+                key={`skeleton-${n}`}
+                className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between animate-pulse shadow-lg"
               >
                 <div className="space-y-4">
-                  {/* Thumbnail do YouTube com botão de Play sobreposto */}
-                  <div 
-                    onClick={() => setSelectedLesson(lesson)}
-                    className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800/80 group-hover:border-slate-700 transition cursor-pointer select-none"
-                    title={`Assistir: ${lesson.title}`}
-                  >
-                    <img 
-                      src={thumbnailUrl} 
-                      alt={lesson.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                      loading="lazy"
-                    />
+                  {/* Thumbnail Placeholder 16:9 */}
+                  <div className="relative aspect-video w-full rounded-xl bg-slate-950/80 border border-slate-800/60 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center">
+                      <Video className="w-4 h-4 text-slate-700" />
+                    </div>
+                    <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg">
+                      <div className="w-7 h-2.5 bg-slate-800 rounded" />
+                    </div>
+                  </div>
 
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-black/70 border border-white/20 group-hover:border-[#1ed760] group-hover:bg-[#1ed760] transition duration-300 flex items-center justify-center shadow-xl">
-                        <Play className="w-5 h-5 text-white group-hover:text-slate-950 transition fill-current ml-0.5" />
+                  {/* Informações da aula (placeholders de título e descrição) */}
+                  <div className="space-y-2.5 pt-1">
+                    <div className="h-4 bg-slate-800/90 rounded w-4/5" />
+                    <div className="h-3 bg-slate-850/80 rounded w-full" />
+                    <div className="h-3 bg-slate-850/60 rounded w-2/3" />
+                  </div>
+                </div>
+
+                {/* Botões Placeholder */}
+                <div className="flex items-center gap-2 pt-5 mt-4 border-t border-slate-800/80">
+                  <div className="h-9 bg-slate-800/70 rounded-xl flex-1" />
+                  <div className="h-9 bg-slate-850/50 rounded-xl w-24 border border-slate-800/60" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {lessons.map((lesson, idx) => {
+              const thumbnailUrl = `https://img.youtube.com/vi/${lesson.youtubeVideoId}/hqdefault.jpg`;
+              const lessonNumber = String(lesson.order || idx + 1).padStart(2, '0');
+
+              return (
+                <div 
+                  key={lesson.id}
+                  className="bg-slate-900/60 border border-slate-800/80 hover:border-slate-700/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition group shadow-lg hover:shadow-black/60"
+                >
+                  <div className="space-y-4">
+                    {/* Thumbnail do YouTube com botão de Play sobreposto */}
+                    <div 
+                      onClick={() => setSelectedLesson(lesson)}
+                      className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800/80 group-hover:border-slate-700 transition cursor-pointer select-none"
+                      title={`Assistir: ${lesson.title}`}
+                    >
+                      <img 
+                        src={thumbnailUrl} 
+                        alt={lesson.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        loading="lazy"
+                      />
+
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-black/70 border border-white/20 group-hover:border-[#1ed760] group-hover:bg-[#1ed760] transition duration-300 flex items-center justify-center shadow-xl">
+                          <Play className="w-5 h-5 text-white group-hover:text-slate-950 transition fill-current ml-0.5" />
+                        </div>
+                      </div>
+
+                      {/* Badge do número da aula sobre a thumbnail */}
+                      <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-black/80 backdrop-blur-sm border border-white/10 rounded-lg">
+                        <span className="text-xs font-mono font-bold text-yellow-400">
+                          [ {lessonNumber} ]
+                        </span>
                       </div>
                     </div>
 
-                    {/* Badge do número da aula sobre a thumbnail */}
-                    <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-black/80 backdrop-blur-sm border border-white/10 rounded-lg">
-                      <span className="text-xs font-mono font-bold text-yellow-400">
-                        [ {lessonNumber} ]
-                      </span>
+                    {/* Informações da aula */}
+                    <div className="space-y-2">
+                      <h3 className="font-heading font-black text-sm sm:text-base uppercase tracking-tight text-white line-clamp-2 leading-snug">
+                        {lesson.title}
+                      </h3>
+
+                      <p className="text-slate-400 text-xs sm:text-sm leading-relaxed line-clamp-3">
+                        {lesson.description}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Informações da aula */}
-                  <div className="space-y-2">
-                    <h3 className="font-heading font-black text-sm sm:text-base uppercase tracking-tight text-white line-clamp-2 leading-snug">
-                      {lesson.title}
-                    </h3>
+                  {/* Botões de Ação */}
+                  <div className="flex items-center gap-2 pt-5 mt-4 border-t border-slate-800/80">
+                    <button
+                      onClick={() => setSelectedLesson(lesson)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-[#1ed760] hover:bg-[#1fdf64] text-slate-950 font-heading font-black text-xs uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md shadow-[#1ed760]/10"
+                      title="Assistir incorporado no SomDrive"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>Assistir Aqui</span>
+                    </button>
 
-                    <p className="text-slate-400 text-xs sm:text-sm leading-relaxed line-clamp-3">
-                      {lesson.description}
-                    </p>
+                    <a
+                      href={lesson.youtubeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-white font-heading font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-800 hover:border-slate-700 transition cursor-pointer"
+                      title="Abrir no YouTube em nova aba"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">No</span> YouTube
+                    </a>
                   </div>
                 </div>
-
-                {/* Botões de Ação */}
-                <div className="flex items-center gap-2 pt-5 mt-4 border-t border-slate-800/80">
-                  <button
-                    onClick={() => setSelectedLesson(lesson)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-[#1ed760] hover:bg-[#1fdf64] text-slate-950 font-heading font-black text-xs uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md shadow-[#1ed760]/10"
-                    title="Assistir incorporado no SomDrive"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Assistir Aqui</span>
-                  </button>
-
-                  <a
-                    href={lesson.youtubeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-white font-heading font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-800 hover:border-slate-700 transition cursor-pointer"
-                    title="Abrir no YouTube em nova aba"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">No</span> YouTube
-                  </a>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* MENSAGEM DE APOIO AO FINAL */}
         <div className="mt-14 sm:mt-20 p-6 sm:p-8 bg-slate-900/40 border border-slate-800/80 rounded-2xl text-center max-w-2xl mx-auto space-y-3">

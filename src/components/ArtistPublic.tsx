@@ -2264,11 +2264,11 @@ export default function ArtistPublic({
                             onSelectTrack(track, activeDisplayTracks);
                           }
                         }}
-                        className={`grid grid-cols-12 gap-3 md:gap-4 px-4.5 sm:px-6 py-1.5 md:py-2 items-center cursor-pointer transition-all select-none border-l-[3.5px] group ${isCurrentlyPlaying ? 'bg-zinc-850/60 border-l-[#10b981] shadow-inner' : 'border-l-transparent hover:border-l-zinc-700 hover:bg-zinc-800/60'}`}
+                        className={`flex sm:grid sm:grid-cols-12 gap-2 sm:gap-3 md:gap-4 px-2.5 sm:px-6 py-2 sm:py-2 items-center cursor-pointer transition-all select-none border-l-[3.5px] group ${isCurrentlyPlaying ? 'bg-zinc-850/60 border-l-[#10b981] shadow-inner' : 'border-l-transparent hover:border-l-zinc-700 hover:bg-zinc-800/60'}`}
                       >
                         {/* Col 1: Index Number + Play Trigger (always visible together) */}
-                        <div className="col-span-3 sm:col-span-2 flex items-center justify-start gap-2 sm:gap-3 min-w-0">
-                          <span className="font-mono text-[11px] sm:text-xs font-bold text-zinc-500 select-none shrink-0 w-5 text-left">
+                        <div className="shrink-0 sm:col-span-2 flex items-center justify-start gap-1.5 sm:gap-3 min-w-0">
+                          <span className="font-mono text-[10.5px] sm:text-xs font-bold text-zinc-500 select-none shrink-0 w-5 text-left">
                             {(idx + 1).toString().padStart(2, '0')}
                           </span>
                           <button
@@ -2280,7 +2280,7 @@ export default function ArtistPublic({
                                 onSelectTrack(track, activeDisplayTracks);
                               }
                             }}
-                            className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border transition-all cursor-pointer outline-none shrink-0 ${
+                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border transition-all cursor-pointer outline-none shrink-0 ${
                               isCurrentlyPlaying
                                 ? 'bg-[#10b981] border-[#10b981] text-black hover:bg-[#34d399] hover:scale-105'
                                 : 'bg-zinc-900/80 border-zinc-600 text-white hover:border-white hover:bg-zinc-800 hover:scale-105'
@@ -2299,7 +2299,7 @@ export default function ArtistPublic({
                         </div>
 
                         {/* Col 2: Title & Waveform bar layout from Reference */}
-                        <div className="col-span-6 sm:col-span-4 md:col-span-5 flex items-center gap-3 min-w-0">
+                        <div className="flex-1 min-w-0 sm:col-span-4 md:col-span-5 flex items-center gap-2 sm:gap-3">
                           
                           {/* Mini dynamic waveform indicator next to title */}
                           <div className="flex items-end gap-[1.5px] h-3.5 text-[#10b981] shrink-0 select-none hidden lg:flex mr-1">
@@ -2309,14 +2309,14 @@ export default function ArtistPublic({
                           </div>
 
                           <div className="min-w-0 text-left flex-1">
-                            <h4 className={`text-[16px] sm:text-[16px] font-heading font-black truncate uppercase tracking-wide ${isCurrentlyPlaying ? 'text-[#10b981]' : 'text-zinc-100'}`}>
+                            <h4 className={`text-[14px] sm:text-[16px] font-heading font-black line-clamp-2 sm:truncate uppercase tracking-wide leading-snug sm:leading-normal ${isCurrentlyPlaying ? 'text-[#10b981]' : 'text-zinc-100'}`}>
                               {track.title}
                             </h4>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 mt-0.5 min-w-0">
-                              <p className="text-[12px] sm:text-[12px] text-zinc-500 font-mono uppercase truncate">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5 mt-0.5 min-w-0">
+                              <p className="text-[11px] sm:text-[12px] text-zinc-500 font-mono uppercase truncate">
                                 Autor: {getCleanComposer(track, track.artistName || artist?.name || '')}
                               </p>
-                              <span className="inline-flex self-start px-1.5 py-[2px] bg-zinc-900 border border-zinc-800 text-zinc-350 font-mono text-[10px] sm:text-[11px] font-bold rounded uppercase shrink-0">
+                              <span className="inline-flex self-start px-1.5 py-[1px] bg-zinc-900 border border-zinc-800 text-zinc-350 font-mono text-[9.5px] sm:text-[11px] font-bold rounded uppercase shrink-0">
                                 {track.genre || 'Sertanejo'}
                               </span>
                             </div>
@@ -2336,7 +2336,7 @@ export default function ArtistPublic({
                         </div>
 
                         {/* Col 4: Durations & popup menus */}
-                        <div className="col-span-3 sm:col-span-3 text-right flex items-center justify-end gap-1 sm:gap-2 relative">
+                        <div className="shrink-0 sm:col-span-3 text-right flex items-center justify-end gap-0.5 sm:gap-2 relative">
                           <span className="font-mono text-xs text-zinc-500 hidden md:inline">{durationText}</span>
                           
                           {/* WhatsApp contact regarding track */}
