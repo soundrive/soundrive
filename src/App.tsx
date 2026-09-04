@@ -14,6 +14,7 @@ const AuthScreen = lazy(() => import('./components/AuthScreen'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const AdminArea = lazy(() => import('./components/AdminArea'));
 const PaymentReturnScreen = lazy(() => import('./components/PaymentReturnScreen'));
+const HowToUsePage = lazy(() => import('./components/HowToUsePage'));
 
 const LoadingFallback = () => (
   <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
@@ -26,10 +27,12 @@ const LoadingFallback = () => (
 
 export default function App() {
   // SPA Routing state sync with address bar (initialized synchronously to avoid double mounts / chunk lags)
-  const [currentView, setCurrentView] = useState<'landing' | 'auth' | 'dashboard' | 'public' | 'admin' | 'payment_return'>(() => {
+  const [currentView, setCurrentView] = useState<'landing' | 'auth' | 'dashboard' | 'public' | 'admin' | 'payment_return' | 'how_to_use'>(() => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '/';
     if (path.includes('/artista/') || path.includes('/artist/') || path.includes('/catalogo/') || path.startsWith('/s/')) {
       return 'public';
+    } else if (path === '/como-usar') {
+      return 'how_to_use';
     } else if (path === '/pagamento/retorno' || path === '/pagamento/sucesso' || path === '/pagamento/pendente' || path === '/pagamento/erro') {
       return 'payment_return';
     } else if (path === '/dashboard') {
@@ -244,6 +247,9 @@ export default function App() {
         setRoutePayload({ id: artistSlug, autoCar: false });
         return;
       }
+    } else if (path === '/como-usar') {
+      setCurrentView('how_to_use');
+      return;
     } else if (path === '/pagamento/retorno' || path === '/pagamento/sucesso' || path === '/pagamento/pendente' || path === '/pagamento/erro') {
       setCurrentView('payment_return');
       return;
@@ -284,7 +290,7 @@ export default function App() {
   }, []);
 
   // Update browser address bar dynamically on routing changes
-  const handleNavigate = (view: 'landing' | 'auth' | 'dashboard' | 'public' | 'admin' | 'payment_return', payload?: any) => {
+  const handleNavigate = (view: 'landing' | 'auth' | 'dashboard' | 'public' | 'admin' | 'payment_return' | 'how_to_use', payload?: any) => {
     if (view === 'admin') {
       const u = dbService.getCurrentUser();
       const uEmail = u?.email?.toLowerCase().trim() || '';
@@ -307,6 +313,8 @@ export default function App() {
       } else {
         window.history.pushState({}, '', `${prefix}${payload.id}`);
       }
+    } else if (view === 'how_to_use') {
+      window.history.pushState({}, '', '/como-usar');
     } else if (view === 'dashboard') {
       window.history.pushState({}, '', '/dashboard');
     } else if (view === 'auth') {
@@ -352,6 +360,8 @@ export default function App() {
         } else {
           setCurrentView('auth');
         }
+      } else if (path === '/como-usar') {
+        setCurrentView('how_to_use');
       } else if (path === '/entrar') {
         setCurrentView('auth');
       } else if (path === '/pagamento/retorno' || path === '/pagamento/sucesso' || path === '/pagamento/pendente' || path === '/pagamento/erro') {
@@ -579,6 +589,16 @@ export default function App() {
             onCollectionImageOffsetYChange={setCollectionImageOffsetY}
             collectionImageOffsetX={collectionImageOffsetX}
             onCollectionImageOffsetXChange={setCollectionImageOffsetX}
+          />
+        )}
+
+        {currentView === 'how_to_use' && (
+          <HowToUsePage 
+            onNavigate={handleNavigate}
+            currentUser={currentUser}
+            logoScale={logoScale}
+            showLogo={showLogo}
+            customLogoUrl={customLogoUrl}
           />
         )}
 

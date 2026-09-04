@@ -325,4 +325,20 @@ export function getCleanComposer(
    return composer;
  }
 
+export interface TutorialLesson {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  youtubeVideoId: string;
+  youtubeUrl: string;
+  active: boolean;
+}
+
+export interface TutorialSettings {
+  lessons: TutorialLesson[];
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
 

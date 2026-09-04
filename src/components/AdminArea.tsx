@@ -27,11 +27,13 @@ import {
   Megaphone,
   Database,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Video,
+  HelpCircle
 } from 'lucide-react';
-import { Artist, ShareCardSettings, RecommendedToolConfig, FREE_MUSIC_LIMIT } from '../types';
+import { Artist, ShareCardSettings, RecommendedToolConfig, FREE_MUSIC_LIMIT, TutorialLesson } from '../types';
 import AnnouncementsManager from './admin/AnnouncementsManager';
-import { dbService, DEFAULT_RECOMMENDED_TOOL } from '../lib/db';
+import { dbService, DEFAULT_RECOMMENDED_TOOL, DEFAULT_TUTORIAL_LESSONS, extractYouTubeId } from '../lib/db';
 import { RecommendedToolCard } from './RecommendedToolCard';
 
 import { motion } from 'motion/react';
@@ -688,6 +690,72 @@ export default function AdminArea({
       setRecommendedToolError('Erro ao salvar as configurações. Tente novamente.');
     } finally {
       setIsSavingRecommendedTool(false);
+    }
+  };
+
+  // Tutorial / Como Usar States
+  const [tutorialLessons, setTutorialLessons] = useState<TutorialLesson[]>(DEFAULT_TUTORIAL_LESSONS);
+  const [isSavingTutorials, setIsSavingTutorials] = useState(false);
+  const [tutorialsSuccessMsg, setTutorialsSuccessMsg] = useState('');
+  const [tutorialsErrorMsg, setTutorialsErrorMsg] = useState('');
+
+  const loadTutorialSettings = async () => {
+    try {
+      const lessons = await dbService.getTutorialSettings();
+      if (Array.isArray(lessons) && lessons.length > 0) {
+        setTutorialLessons(lessons);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar configurações de tutoriais no admin:", err);
+    }
+  };
+
+  const handleTutorialChange = (id: string, field: keyof TutorialLesson, value: any) => {
+    setTutorialLessons(prev => prev.map(lesson => {
+      if (lesson.id === id) {
+        const updated = { ...lesson, [field]: value };
+        if (field === 'youtubeUrl') {
+          const extracted = extractYouTubeId(value);
+          if (extracted) {
+            updated.youtubeVideoId = extracted;
+          } else if (!value.trim()) {
+            updated.youtubeVideoId = '';
+          }
+        }
+        return updated;
+      }
+      return lesson;
+    }));
+  };
+
+  const handleSaveTutorials = async () => {
+    setIsSavingTutorials(true);
+    setTutorialsSuccessMsg('');
+    setTutorialsErrorMsg('');
+
+    // Validar se há aulas ativas com link quebrado inserido
+    const hasInvalid = tutorialLessons.some(l => l.active && l.youtubeUrl.trim() && !extractYouTubeId(l.youtubeUrl));
+    if (hasInvalid) {
+      setTutorialsErrorMsg("Um ou mais links do YouTube são inválidos. Corrija-os antes de salvar.");
+      setIsSavingTutorials(false);
+      return;
+    }
+
+    try {
+      const cleanedLessons = tutorialLessons.map(l => ({
+        ...l,
+        youtubeVideoId: extractYouTubeId(l.youtubeUrl) || l.youtubeVideoId
+      }));
+      await dbService.updateTutorialSettings(cleanedLessons, currentUser.email || 'admin');
+      setTutorialLessons(cleanedLessons);
+      setTutorialsSuccessMsg("TUTORIAIS SALVOS COM SUCESSO");
+      triggerNotification("Tutoriais da Central Como Usar salvos com sucesso!");
+      setTimeout(() => setTutorialsSuccessMsg(''), 4500);
+    } catch (err: any) {
+      console.error("Não foi possível salvar os tutoriais:", err);
+      setTutorialsErrorMsg("Não foi possível salvar os tutoriais.");
+    } finally {
+      setIsSavingTutorials(false);
     }
   };
 
@@ -1370,6 +1438,7 @@ export default function AdminArea({
     loadShareCardSettings();
     loadIntegrationStatus();
     loadSubscriptions();
+    loadTutorialSettings();
   }, []);
 
   useEffect(() => {
@@ -1379,6 +1448,7 @@ export default function AdminArea({
     if (activeTab === 'settings') {
       loadIntegrationStatus();
       loadShareCardSettings();
+      loadTutorialSettings();
       dbService.getRecommendedToolSettings()
         .then(cfg => { if (cfg) setRecommendedTool(cfg); })
         .catch(err => console.error("Error loading recommended tool settings in admin:", err));
@@ -4311,6 +4381,227 @@ export default function AdminArea({
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* CENTRAL COMO USAR / TUTORIAIS DO SOMDRIVE */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <Video className="h-5 w-5 text-[#1ed760]" />
+                      CENTRAL COMO USAR
+                    </h3>
+                    <p className="text-slate-400 text-xs mt-1">
+                      Gerencie os vídeos exibidos na página Como Usar do SomDrive.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("Deseja restaurar as 7 aulas padrão da Central de Tutoriais?")) {
+                        setTutorialLessons(DEFAULT_TUTORIAL_LESSONS);
+                      }
+                    }}
+                    className="self-start sm:self-auto px-3.5 py-2 bg-slate-950 border border-slate-800 hover:bg-slate-850 text-slate-400 hover:text-slate-200 text-xs rounded-xl transition cursor-pointer"
+                  >
+                    Restaurar 7 Aulas Padrão
+                  </button>
+                </div>
+
+                {/* Lista de Aulas */}
+                <div className="space-y-5">
+                  {tutorialLessons.map((lesson, index) => {
+                    const extractedId = extractYouTubeId(lesson.youtubeUrl) || lesson.youtubeVideoId;
+                    const isUrlInvalid = !!lesson.youtubeUrl.trim() && !extractedId;
+                    const formattedOrder = String(lesson.order || index + 1).padStart(2, '0');
+
+                    return (
+                      <div
+                        key={lesson.id || index}
+                        className={`p-5 rounded-2xl border transition space-y-4 ${
+                          lesson.active
+                            ? 'bg-slate-950/70 border-slate-800/90'
+                            : 'bg-slate-950/30 border-slate-850/50 opacity-60'
+                        }`}
+                      >
+                        {/* Cabeçalho do Card */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-850">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-mono font-bold text-yellow-400 bg-black/60 px-2.5 py-1 rounded-lg border border-yellow-500/20">
+                              [ {formattedOrder} ]
+                            </span>
+                            <span className="text-xs font-bold text-slate-300">
+                              Aula #{lesson.order || index + 1}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-4">
+                            {/* Campo Ordem */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-[11px] font-bold text-slate-400 uppercase">Ordem:</label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="99"
+                                value={lesson.order || index + 1}
+                                onChange={(e) => handleTutorialChange(lesson.id, 'order', parseInt(e.target.value, 10) || 1)}
+                                className="w-16 px-2.5 py-1 bg-slate-900 border border-slate-800 text-white rounded-lg text-xs text-center font-mono focus:border-[#1ed760] outline-none"
+                              />
+                            </div>
+
+                            {/* Toggle Ativo */}
+                            <div className="flex items-center gap-2">
+                              <label className="text-[11px] font-bold text-slate-400 uppercase">
+                                {lesson.active ? 'Ativo' : 'Inativo'}
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => handleTutorialChange(lesson.id, 'active', !lesson.active)}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                  lesson.active ? 'bg-[#1ed760]' : 'bg-slate-800'
+                                }`}
+                                title={lesson.active ? "Aula visível na página" : "Aula oculta na página"}
+                              >
+                                <span
+                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-slate-950 shadow ring-0 transition duration-200 ease-in-out ${
+                                    lesson.active ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
+                                />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Campos de Conteúdo */}
+                        <div className="grid grid-cols-1 gap-4">
+                          {/* Título */}
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5 uppercase">
+                              Título da Aula
+                            </label>
+                            <input
+                              type="text"
+                              value={lesson.title}
+                              onChange={(e) => handleTutorialChange(lesson.id, 'title', e.target.value)}
+                              placeholder="Ex: COMO CRIAR SUA CONTA NO SOMDRIVE"
+                              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:border-[#1ed760] outline-none transition font-medium"
+                            />
+                          </div>
+
+                          {/* Descrição */}
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5 uppercase">
+                              Descrição
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={lesson.description}
+                              onChange={(e) => handleTutorialChange(lesson.id, 'description', e.target.value)}
+                              placeholder="Resumo explicativo do conteúdo desta aula..."
+                              className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 placeholder-slate-600 focus:border-[#1ed760] outline-none transition resize-none leading-relaxed"
+                            />
+                          </div>
+
+                          {/* Link e ID do Vídeo */}
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+                            <div className="lg:col-span-2">
+                              <label className="text-xs font-bold text-slate-300 block mb-1.5 uppercase">
+                                Link do YouTube
+                              </label>
+                              <input
+                                type="text"
+                                value={lesson.youtubeUrl}
+                                onChange={(e) => handleTutorialChange(lesson.id, 'youtubeUrl', e.target.value)}
+                                placeholder="https://www.youtube.com/watch?v=... ou https://youtu.be/..."
+                                className={`w-full px-3.5 py-2.5 bg-slate-900 border rounded-xl text-xs text-white placeholder-slate-600 outline-none transition font-mono ${
+                                  isUrlInvalid ? 'border-red-500/80 focus:border-red-500' : 'border-slate-800 focus:border-[#1ed760]'
+                                }`}
+                              />
+                              {isUrlInvalid && (
+                                <p className="text-[11px] text-red-400 font-medium mt-1">
+                                  Link do YouTube inválido. Use um formato reconhecido (watch?v=, youtu.be/ ou shorts/).
+                                </p>
+                              )}
+                              <span className="text-[11px] text-slate-500 block mt-1">
+                                Aceita links do tipo watch?v=, youtu.be/, shorts/ ou o ID direto.
+                              </span>
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-bold text-slate-300 block mb-1.5 uppercase">
+                                ID do Vídeo (Automático)
+                              </label>
+                              <input
+                                type="text"
+                                readOnly
+                                value={extractedId || ''}
+                                placeholder="Auto-preenchido"
+                                className="w-full px-3.5 py-2.5 bg-slate-900/50 border border-slate-800/80 rounded-xl text-xs text-slate-400 font-mono select-all cursor-not-allowed"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Prévia da Thumbnail */}
+                          {extractedId && (
+                            <div className="pt-2">
+                              <label className="text-[11px] font-bold text-slate-400 block mb-2 uppercase">
+                                Prévia da Thumbnail
+                              </label>
+                              <div className="flex items-center gap-4">
+                                <div className="relative w-44 aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800 shadow-md">
+                                  <img
+                                    src={`https://img.youtube.com/vi/${extractedId}/hqdefault.jpg`}
+                                    alt={`Thumbnail da Aula #${lesson.order || index + 1}`}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <div className="text-[11px] text-slate-400 space-y-1">
+                                  <p className="text-emerald-400 font-bold flex items-center gap-1">
+                                    <CheckCircle className="w-3.5 h-3.5" /> Vídeo vinculado com sucesso
+                                  </p>
+                                  <p className="text-slate-500 font-mono text-[10px]">
+                                    ID: {extractedId}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Feedback e Botão de Salvar */}
+                <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    {tutorialsSuccessMsg && (
+                      <div className="p-3 bg-emerald-950/40 border border-emerald-900/30 text-xs text-emerald-400 rounded-xl animate-fade-in font-bold flex items-center gap-1.5">
+                        <CheckCircle className="w-4 h-4 text-[#1ed760]" />
+                        {tutorialsSuccessMsg}
+                      </div>
+                    )}
+
+                    {tutorialsErrorMsg && (
+                      <div className="p-3 bg-red-950/40 border border-red-900/30 text-xs text-red-400 rounded-xl animate-fade-in font-bold flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-red-400" />
+                        {tutorialsErrorMsg}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isSavingTutorials}
+                    onClick={handleSaveTutorials}
+                    className="px-6 py-3 bg-[#1ed760] hover:bg-[#1fdf64] text-slate-950 font-heading font-black text-xs uppercase tracking-wider rounded-xl transition cursor-pointer shadow-lg shadow-[#1ed760]/10 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{isSavingTutorials ? "SALVANDO TUTORIAIS..." : "SALVAR TUTORIAIS"}</span>
+                  </button>
                 </div>
               </div>
 

@@ -1,6 +1,83 @@
-import { Artist, Music, Analytics, PaymentSettings, ShareCardSettings, AppearanceSettings, RecommendedToolConfig, Repertoire, Project, Announcement, AnnouncementType, FirestoreDateLike, FREE_MUSIC_LIMIT } from '../types';
+import { Artist, Music, Analytics, PaymentSettings, ShareCardSettings, AppearanceSettings, RecommendedToolConfig, Repertoire, Project, Announcement, AnnouncementType, FirestoreDateLike, FREE_MUSIC_LIMIT, TutorialLesson, TutorialSettings } from '../types';
 
 export { FREE_MUSIC_LIMIT };
+
+export function extractYouTubeId(url: string): string | null {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+  const match = trimmed.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
+
+export const DEFAULT_TUTORIAL_LESSONS: TutorialLesson[] = [
+  {
+    id: 'lesson-01',
+    order: 1,
+    title: 'POR QUE VOCÊ DEVERIA USAR O SOMDRIVE?',
+    description: 'Entenda como o SomDrive ajuda a organizar, apresentar e compartilhar músicas e repertórios de forma profissional.',
+    youtubeVideoId: 'dQw4w9WgXcQ',
+    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    active: true
+  },
+  {
+    id: 'lesson-02',
+    order: 2,
+    title: 'COMO CRIAR SUA CONTA NO SOMDRIVE',
+    description: 'Veja como criar sua conta passo a passo e começar a organizar seu catálogo autoral.',
+    youtubeVideoId: 'dQw4w9WgXcQ',
+    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    active: true
+  },
+  {
+    id: 'lesson-03',
+    order: 3,
+    title: 'COMO FUNCIONA O PAINEL DO COMPOSITOR',
+    description: 'Entenda onde ficam suas músicas, repertórios, perfil e ferramentas principais.',
+    youtubeVideoId: 'dQw4w9WgXcQ',
+    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    active: true
+  },
+  {
+    id: 'lesson-04',
+    order: 4,
+    title: 'COMO CADASTRAR UMA MÚSICA',
+    description: 'Veja como fazer upload da guia em MP3 e preencher todas as informações da sua composição.',
+    youtubeVideoId: 'dQw4w9WgXcQ',
+    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    active: true
+  },
+  {
+    id: 'lesson-05',
+    order: 5,
+    title: 'COMO CRIAR REPERTÓRIOS / PASTAS',
+    description: 'Aprenda a criar pastas personalizadas públicas e privadas para organizar suas canções.',
+    youtubeVideoId: 'dQw4w9WgXcQ',
+    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    active: true
+  },
+  {
+    id: 'lesson-06',
+    order: 6,
+    title: 'COMO COLOCAR MÚSICAS DENTRO DE UM REPERTÓRIO',
+    description: 'Selecione e ordene as músicas certas dentro de cada pasta para cada estilo ou projeto.',
+    youtubeVideoId: 'dQw4w9WgXcQ',
+    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    active: true
+  },
+  {
+    id: 'lesson-07',
+    order: 7,
+    title: 'COMO COMPARTILHAR SEU PERFIL E SUA PASTA / REPERTÓRIO',
+    description: 'Saiba como enviar seu catálogo e repertórios direto no WhatsApp de artistas e produtores.',
+    youtubeVideoId: 'dQw4w9WgXcQ',
+    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    active: true
+  }
+];
 
 export const DEFAULT_RECOMMENDED_TOOL: RecommendedToolConfig = {
   active: false,
@@ -2472,6 +2549,50 @@ export const dbService = {
       throw e;
     }
   },
+
+  async getTutorialSettings(): Promise<TutorialLesson[]> {
+    try {
+      const docRef = doc(db, 'settings', 'tutorials');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (Array.isArray(data.lessons) && data.lessons.length > 0) {
+          return data.lessons.map((item: any, idx: number) => ({
+            id: item.id || `lesson-${String(idx + 1).padStart(2, '0')}`,
+            order: typeof item.order === 'number' ? item.order : idx + 1,
+            title: item.title || '',
+            description: item.description || '',
+            youtubeVideoId: item.youtubeVideoId || '',
+            youtubeUrl: item.youtubeUrl || '',
+            active: typeof item.active === 'boolean' ? item.active : true
+          }));
+        }
+      }
+      return DEFAULT_TUTORIAL_LESSONS;
+    } catch (e) {
+      console.error("Error fetching tutorial settings:", e);
+      return DEFAULT_TUTORIAL_LESSONS;
+    }
+  },
+
+  async updateTutorialSettings(lessons: TutorialLesson[], updatedBy: string): Promise<void> {
+    try {
+      const docRef = doc(db, 'settings', 'tutorials');
+      const dataToSave = {
+        lessons,
+        updatedAt: new Date().toISOString(),
+        updatedBy: updatedBy
+      };
+      await setDoc(docRef, dataToSave, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.WRITE, 'settings/tutorials');
+        throw err;
+      });
+    } catch (e) {
+      console.error("Error updating tutorial settings:", e);
+      throw e;
+    }
+  },
+
 
 
   // ================= REPERTOIRES & PROJECTS STORAGE LAYER =================

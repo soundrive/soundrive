@@ -42,7 +42,7 @@ import { PLANS_CONFIG } from '../lib/plansConfig';
 import { BrandLogo } from './BrandLogo';
 
 interface LandingPageProps {
-  onNavigate: (view: 'landing' | 'auth' | 'dashboard' | 'public' | 'admin', payload?: any) => void;
+  onNavigate: (view: 'landing' | 'auth' | 'dashboard' | 'public' | 'admin' | 'how_to_use', payload?: any) => void;
   currentUser: Artist | null;
   onLogout: () => void;
   logoScale?: number;
@@ -627,6 +627,12 @@ export default function LandingPage({
               className="text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-white transition cursor-pointer px-2 py-1"
             >
               Planos
+            </button>
+            <button 
+              onClick={() => onNavigate('how_to_use')} 
+              className="text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-white transition cursor-pointer px-2 py-1 whitespace-nowrap"
+            >
+              Como Usar
             </button>
             
             {currentUser ? (
@@ -1440,6 +1446,36 @@ export default function LandingPage({
               "Para garantir que quem receber seu link no trânsito, no celular ou pareando via Bluetooth no carro consiga ouvir instantaneamente sem travamentos, sugerimos enviar arquivos MP3 de até 5 MB de tamanho. Seus ouvintes agradecerão o carregamento rápido."
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* SECTION INSTITUCIONAL: NOVO NO SOMDRIVE? */}
+      <section className="relative z-10 max-w-5xl mx-auto px-6 md:px-12 pt-20 sm:pt-24">
+        <div className="bg-gradient-to-b from-slate-900/80 to-slate-950/90 border border-slate-800/80 rounded-3xl p-6 sm:p-10 md:p-12 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 text-center md:text-left">
+          <div className="space-y-3 max-w-xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-950/80 border border-slate-800 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1ed760]"></span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                NOVO NO SOMDRIVE?
+              </span>
+            </div>
+
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-heading font-black uppercase text-white tracking-tight leading-tight">
+              APRENDA A USAR PASSO A PASSO
+            </h3>
+
+            <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
+              Veja como criar sua conta, cadastrar músicas, organizar repertórios e compartilhar seu catálogo.
+            </p>
+          </div>
+
+          <button
+            onClick={() => onNavigate('how_to_use')}
+            className="shrink-0 flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 bg-[#1ed760] hover:bg-[#1fdf64] text-slate-950 font-heading font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl transition cursor-pointer shadow-lg shadow-[#1ed760]/10 hover:shadow-[#1ed760]/20 select-none whitespace-nowrap"
+          >
+            <span>VER COMO USAR</span>
+            <span className="text-base font-bold">→</span>
+          </button>
         </div>
       </section>
 

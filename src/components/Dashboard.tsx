@@ -42,7 +42,8 @@ import {
   FolderClosed,
   FolderOpen,
   MoreVertical,
-  MoreHorizontal
+  MoreHorizontal,
+  HelpCircle
 } from 'lucide-react';
 
 const FOLDER_COLORS = [
@@ -211,7 +212,7 @@ import { motion } from 'motion/react';
 interface DashboardProps {
   currentUser: Artist;
   onLogout: () => void;
-  onNavigate: (view: 'landing' | 'auth' | 'dashboard' | 'public' | 'admin', payload?: any) => void;
+  onNavigate: (view: 'landing' | 'auth' | 'dashboard' | 'public' | 'admin' | 'how_to_use', payload?: any) => void;
   onSelectTrack: (track: Track, list: Track[]) => void;
   activeTrack: Track | null;
   isPlaying?: boolean;
@@ -2029,7 +2030,16 @@ export default function Dashboard({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-4">
+          <button
+            onClick={() => onNavigate('how_to_use')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/90 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition cursor-pointer select-none"
+            title="Acessar Central de Tutoriais (Como Usar o SomDrive)"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-[#1ed760]" />
+            <span className="hidden sm:inline">Como Usar</span>
+          </button>
+
           {(profile.role === 'admin' || profile.email?.toLowerCase().trim() === 'videopremieroficial@gmail.com' || profile.email?.toLowerCase().trim() === 'sertanejopremier@gmail.com') && (
             <button 
               onClick={() => onNavigate('admin')}
